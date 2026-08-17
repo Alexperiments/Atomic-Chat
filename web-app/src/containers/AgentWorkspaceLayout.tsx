@@ -195,7 +195,7 @@ export function AgentWorkspaceLayout({
 
   if (!agentModeActive) {
     return (
-      <main className="flex h-[calc(100dvh-(env(safe-area-inset-bottom)+env(safe-area-inset-top)))] w-full min-w-0 overflow-hidden">
+      <main className="flex h-[calc(var(--app-viewport-height,100dvh)-(env(safe-area-inset-bottom)+env(safe-area-inset-top)))] w-full min-w-0 overflow-hidden">
         {children}
         <ArtifactPanel />
       </main>
@@ -204,7 +204,7 @@ export function AgentWorkspaceLayout({
 
   if (!shouldUseAgentWorkspaceLayout(agentModeActive, isDesktop)) {
     return (
-      <main className="flex h-[calc(100dvh-(env(safe-area-inset-bottom)+env(safe-area-inset-top)))] w-full min-w-0 overflow-hidden">
+      <main className="flex h-[calc(var(--app-viewport-height,100dvh)-(env(safe-area-inset-bottom)+env(safe-area-inset-top)))] w-full min-w-0 overflow-hidden">
         {children}
         <ArtifactPanel />
       </main>
@@ -214,7 +214,7 @@ export function AgentWorkspaceLayout({
   return (
     <main
       ref={workspaceRef}
-      className="relative flex h-[calc(100dvh-(env(safe-area-inset-bottom)+env(safe-area-inset-top)))] w-full min-w-0 overflow-hidden"
+      className="relative flex h-[calc(var(--app-viewport-height,100dvh)-(env(safe-area-inset-bottom)+env(safe-area-inset-top)))] w-full min-w-0 overflow-hidden"
     >
       {!filesVisible && (
         <button

@@ -13,6 +13,7 @@ import { Route as SystemMonitorRouteImport } from './routes/system-monitor'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SkillsIndexRouteImport } from './routes/skills/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as LaunchIndexRouteImport } from './routes/launch/index'
 import { Route as HubIndexRouteImport } from './routes/hub/index'
 import { Route as ThreadsThreadIdRouteImport } from './routes/threads/$threadId'
@@ -53,6 +54,11 @@ const IndexRoute = IndexRouteImport.update({
 const SkillsIndexRoute = SkillsIndexRouteImport.update({
   id: '/skills/',
   path: '/skills/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LaunchIndexRoute = LaunchIndexRouteImport.update({
@@ -185,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/threads/$threadId': typeof ThreadsThreadIdRoute
   '/hub/': typeof HubIndexRoute
   '/launch/': typeof LaunchIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/skills/': typeof SkillsIndexRoute
   '/settings/providers/$providerName': typeof SettingsProvidersProviderNameRoute
   '/settings/providers/': typeof SettingsProvidersIndexRoute
@@ -212,6 +219,7 @@ export interface FileRoutesByTo {
   '/threads/$threadId': typeof ThreadsThreadIdRoute
   '/hub': typeof HubIndexRoute
   '/launch': typeof LaunchIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/skills': typeof SkillsIndexRoute
   '/settings/providers/$providerName': typeof SettingsProvidersProviderNameRoute
   '/settings/providers': typeof SettingsProvidersIndexRoute
@@ -240,6 +248,7 @@ export interface FileRoutesById {
   '/threads/$threadId': typeof ThreadsThreadIdRoute
   '/hub/': typeof HubIndexRoute
   '/launch/': typeof LaunchIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/skills/': typeof SkillsIndexRoute
   '/settings/providers/$providerName': typeof SettingsProvidersProviderNameRoute
   '/settings/providers/': typeof SettingsProvidersIndexRoute
@@ -269,6 +278,7 @@ export interface FileRouteTypes {
     | '/threads/$threadId'
     | '/hub/'
     | '/launch/'
+    | '/settings/'
     | '/skills/'
     | '/settings/providers/$providerName'
     | '/settings/providers/'
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
     | '/threads/$threadId'
     | '/hub'
     | '/launch'
+    | '/settings'
     | '/skills'
     | '/settings/providers/$providerName'
     | '/settings/providers'
@@ -323,6 +334,7 @@ export interface FileRouteTypes {
     | '/threads/$threadId'
     | '/hub/'
     | '/launch/'
+    | '/settings/'
     | '/skills/'
     | '/settings/providers/$providerName'
     | '/settings/providers/'
@@ -351,6 +363,7 @@ export interface RootRouteChildren {
   ThreadsThreadIdRoute: typeof ThreadsThreadIdRoute
   HubIndexRoute: typeof HubIndexRoute
   LaunchIndexRoute: typeof LaunchIndexRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
   SkillsIndexRoute: typeof SkillsIndexRoute
   SettingsProvidersProviderNameRoute: typeof SettingsProvidersProviderNameRoute
   SettingsProvidersIndexRoute: typeof SettingsProvidersIndexRoute
@@ -384,6 +397,13 @@ declare module '@tanstack/react-router' {
       path: '/skills'
       fullPath: '/skills/'
       preLoaderRoute: typeof SkillsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/launch/': {
@@ -559,6 +579,7 @@ const rootRouteChildren: RootRouteChildren = {
   ThreadsThreadIdRoute: ThreadsThreadIdRoute,
   HubIndexRoute: HubIndexRoute,
   LaunchIndexRoute: LaunchIndexRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
   SkillsIndexRoute: SkillsIndexRoute,
   SettingsProvidersProviderNameRoute: SettingsProvidersProviderNameRoute,
   SettingsProvidersIndexRoute: SettingsProvidersIndexRoute,

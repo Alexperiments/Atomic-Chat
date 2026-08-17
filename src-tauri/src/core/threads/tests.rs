@@ -5,7 +5,6 @@ use serde_json::json;
 use tempfile::tempdir;
 
 use super::file_store::*;
-use super::helpers::should_use_sqlite;
 use super::utils::{get_messages_path, get_thread_dir, get_thread_metadata_path};
 
 fn test_thread(title: &str) -> serde_json::Value {
@@ -226,14 +225,6 @@ fn returns_empty_collections_for_new_storage() {
     let root = tempdir().unwrap();
     assert!(list_threads(root.path()).unwrap().is_empty());
     assert!(list_messages(root.path(), "missing").unwrap().is_empty());
-}
-
-#[test]
-fn detects_the_platform_storage_backend() {
-    assert_eq!(
-        should_use_sqlite(),
-        cfg!(any(target_os = "android", target_os = "ios"))
-    );
 }
 
 #[test]

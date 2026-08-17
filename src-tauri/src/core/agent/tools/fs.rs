@@ -550,26 +550,35 @@ async fn trash(args: &Value, context: &ToolContext<'_>) -> Result<ToolOutcome, T
         }
         paths.push(path);
     }
-    for (index, path) in paths.iter().enumerate() {
-        let path = path.to_path_buf();
-        let display = path.display().to_string();
-        let result = tokio::task::spawn_blocking(move || trash::delete(&path))
-            .await
-            .map_err(|error| ToolOutcome::error(format!("Trash task failed: {error}")))?;
-        if let Err(error) = result {
-            return Err(ToolOutcome::error(format!(
+
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    return Err(ToolOutcome::error(
+        "Moving files to the system trash is not supported on mobile",
+    ));
+
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    {
+        for (index, path) in paths.iter().enumerate() {
+            let path = path.to_path_buf();
+            let display = path.display().to_string();
+            let result = tokio::task::spawn_blocking(move || trash::delete(&path))
+                .await
+                .map_err(|error| ToolOutcome::error(format!("Trash task failed: {error}")))?;
+            if let Err(error) = result {
+                return Err(ToolOutcome::error(format!(
                 "Trash failed at paths[{index}] '{display}': {error}; {index} item(s) already moved"
             )));
+            }
         }
+        Ok(ToolOutcome {
+            status: ToolStatus::Ok,
+            summary: format!("Moved {} item(s) to the system trash", paths.len()),
+            details: Some(serde_json::json!({
+                "count": paths.len(),
+                "paths": paths,
+            })),
+        })
     }
-    Ok(ToolOutcome {
-        status: ToolStatus::Ok,
-        summary: format!("Moved {} item(s) to the system trash", paths.len()),
-        details: Some(serde_json::json!({
-            "count": paths.len(),
-            "paths": paths,
-        })),
-    })
 }
 
 async fn patch(args: &Value, context: &ToolContext<'_>) -> Result<ToolOutcome, ToolOutcome> {

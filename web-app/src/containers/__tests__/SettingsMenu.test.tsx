@@ -79,6 +79,7 @@ describe('SettingsMenu', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    global.IS_ANDROID = false
 
     vi.mocked(useNavigate).mockReturnValue(mockNavigate)
     vi.mocked(useMatches).mockReturnValue(mockMatches)
@@ -110,6 +111,18 @@ describe('SettingsMenu', () => {
     ).not.toBeInTheDocument()
     expect(screen.getByText('common:https_proxy')).toBeInTheDocument()
     expect(screen.getByText('common:mcp-servers')).toBeInTheDocument()
+  })
+
+  it('hides desktop-only settings on Android', () => {
+    global.IS_ANDROID = true
+    render(<SettingsMenu />)
+
+    expect(
+      screen.queryByText('common:keyboardShortcuts')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('common:hardware')).not.toBeInTheDocument()
+    expect(screen.getByText('common:attachments')).toBeInTheDocument()
+    expect(screen.getByText('common:https_proxy')).toBeInTheDocument()
   })
 
   it('shows provider expansion chevron when providers are active', () => {

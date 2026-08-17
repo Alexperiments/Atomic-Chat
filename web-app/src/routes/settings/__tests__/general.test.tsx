@@ -279,6 +279,7 @@ Object.assign(navigator, {
 describe('General Settings Route', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    global.IS_ANDROID = false
     seedServiceHub({
       app: {
         factoryReset: vi.fn(),
@@ -326,6 +327,49 @@ describe('General Settings Route', () => {
     })
 
     expect(screen.getByText('v1.0.0')).toBeInTheDocument()
+  })
+
+  it('does not force wide-action settings into a mobile row', async () => {
+    const Component = GeneralRoute.component as React.ComponentType
+    await act(async () => {
+      render(<Component />)
+    })
+
+    const affectedTitles = [
+      'settings:general.checkForUpdates',
+      'settings:dataFolder.appData',
+      'settings:dataFolder.appLogs',
+    ]
+
+    for (const title of affectedTitles) {
+      const item = screen
+        .getAllByTestId('card-item')
+        .find((candidate) => candidate.dataset.title === title)
+      expect(item).toBeDefined()
+      expect(item).not.toHaveClass('flex-row')
+    }
+  })
+
+  it('hides desktop-only General settings on Android', async () => {
+    global.IS_ANDROID = true
+    const Component = GeneralRoute.component as React.ComponentType
+    await act(async () => {
+      render(<Component />)
+    })
+
+    expect(
+      screen.queryByText('Preload last used model on startup')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Reasoning budget (local models)')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('settings:dataFolder.appLogs')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('settings:general.atomicBotCliTitle')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('input')).not.toBeInTheDocument()
   })
 
   // TODO: This test is currently commented out due to missing implementation

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ChatInput from '../ChatInput'
 import { useChatAttachments } from '@/hooks/useChatAttachments'
@@ -117,6 +117,11 @@ vi.mock('@/components/TokenCounter', () => ({
 describe('ChatInput', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 1024,
+      writable: true,
+    })
     seedServiceHub()
     usePrompt.setState({ prompt: '' })
     useChatAttachments.setState({ attachmentsByThread: {} })
@@ -173,6 +178,28 @@ describe('ChatInput', () => {
     )
     await waitFor(() => expect(input).toHaveValue(''))
     unmount()
+  })
+
+  it('does not auto-focus and releases the prompt after sending on mobile', async () => {
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 390,
+      writable: true,
+    })
+    const onSubmit = vi.fn()
+    render(<ChatInput onSubmit={onSubmit} />)
+    const input = screen.getByTestId('chat-input')
+    const sendButton = document.querySelector(
+      '[data-test-id="send-message-button"]'
+    )
+
+    expect(input).not.toHaveFocus()
+    act(() => input.focus())
+    fireEvent.change(input, { target: { value: 'Close the keyboard' } })
+    await act(async () => fireEvent.click(sendButton!))
+
+    expect(onSubmit).toHaveBeenCalled()
+    expect(input).not.toHaveFocus()
   })
 
   it('downscales an image before applying the byte limit', async () => {

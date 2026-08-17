@@ -101,7 +101,7 @@ function General() {
   const [cliPath, setCliPath] = useState<string | null>(null)
   const [isCliLoading, setIsCliLoading] = useState(false)
   const [autostartEnabled, setAutostartEnabled] = useState<boolean | null>(null)
-  const canManageAutostart = IS_TAURI && !isDev()
+  const canManageAutostart = IS_TAURI && !IS_ANDROID && !isDev()
 
   useEffect(() => {
     const fetchDataFolder = async () => {
@@ -113,7 +113,7 @@ function General() {
   }, [serviceHub])
 
   useEffect(() => {
-    if (!IS_TAURI) return
+    if (!IS_TAURI || IS_ANDROID) return
     invoke<{ installed: boolean; path: string | null }>(
       'check_jan_cli_installed'
     )
@@ -209,15 +209,26 @@ function General() {
   }
 
   const handleDataFolderChange = async () => {
-    const selectedPath = await serviceHub.dialog().open({
-      multiple: false,
-      directory: true,
-      defaultPath: janDataFolder,
-    })
+    let selectedPath: string | string[] | null
+    try {
+      selectedPath = IS_ANDROID
+        ? await invoke<string>('select_android_data_folder')
+        : await serviceHub.dialog().open({
+            multiple: false,
+            directory: true,
+            defaultPath: janDataFolder,
+          })
+    } catch (error) {
+      const message = String(error)
+      if (!message.toLowerCase().includes('cancel')) {
+        toast.error(message)
+      }
+      return
+    }
 
     if (selectedPath === janDataFolder) return
-    if (selectedPath !== null) {
-      setSelectedNewPath(selectedPath as string)
+    if (typeof selectedPath === 'string') {
+      setSelectedNewPath(selectedPath)
       setIsDialogOpen(true)
     }
   }
@@ -313,7 +324,7 @@ function General() {
                 <CardItem
                   title={t('settings:general.checkForUpdates')}
                   description={t('settings:general.checkForUpdatesDesc')}
-                  className="items-center flex-row gap-y-2"
+                  className="gap-y-2"
                   actions={
                     <Button
                       variant="secondary"
@@ -460,14 +471,14 @@ function General() {
               />
             </Card>
 
-            {/* Data folder - Desktop only */}
+            {/* Desktop and Android use the same selectable file-backed data folder. */}
             <Card title={t('common:dataFolder')}>
               <CardItem
                 title={t('settings:dataFolder.appData', {
                   ns: 'settings',
                 })}
                 align="start"
-                className="items-start flex-row gap-2"
+                className="gap-2"
                 description={
                   <>
                     <span>
@@ -546,56 +557,65 @@ function General() {
                   </>
                 }
               />
-              <CardItem
-                title={t('settings:dataFolder.appLogs', {
-                  ns: 'settings',
-                })}
-                description={t('settings:dataFolder.appLogsDesc')}
-                className="items-start flex-row gap-y-2"
-                actions={
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="p-0"
-                      onClick={async () => {
-                        if (janDataFolder) {
-                          try {
-                            const logsPath = `${janDataFolder}/logs`
-                            await serviceHub.opener().revealItemInDir(logsPath)
-                          } catch (error) {
-                            console.error(
-                              'Failed to reveal logs folder:',
-                              error
-                            )
+              {!IS_ANDROID && (
+                <CardItem
+                  title={t('settings:dataFolder.appLogs', {
+                    ns: 'settings',
+                  })}
+                  description={t('settings:dataFolder.appLogsDesc')}
+                  align="start"
+                  className="gap-y-2"
+                  actions={
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="p-0"
+                        onClick={async () => {
+                          if (janDataFolder) {
+                            try {
+                              const logsPath = `${janDataFolder}/logs`
+                              await serviceHub.opener().revealItemInDir(logsPath)
+                            } catch (error) {
+                              console.error(
+                                'Failed to reveal logs folder:',
+                                error
+                              )
+                            }
                           }
-                        }
-                      }}
-                      title={t('settings:general.revealLogs')}
-                    >
-                      <IconFolder size={12} className="text-muted-foreground" />
-                      <span>{openFileTitle()}</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleOpenLogs}
-                      title={t('settings:dataFolder.appLogs')}
-                    >
-                      <IconLogs size={12} className="text-muted-foreground" />
-                      <span>{t('settings:general.openLogs')}</span>
-                    </Button>
-                  </div>
-                }
-              />
+                        }}
+                        title={t('settings:general.revealLogs')}
+                      >
+                        <IconFolder
+                          size={12}
+                          className="text-muted-foreground"
+                        />
+                        <span>{openFileTitle()}</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleOpenLogs}
+                        title={t('settings:dataFolder.appLogs')}
+                      >
+                        <IconLogs
+                          size={12}
+                          className="text-muted-foreground"
+                        />
+                        <span>{t('settings:general.openLogs')}</span>
+                      </Button>
+                    </div>
+                  }
+                />
+              )}
             </Card>
 
             {/* Detected model locations / scan folders - Desktop only */}
-            {IS_TAURI && <LocalModelLocationsCard />}
+            {IS_TAURI && !IS_ANDROID && <LocalModelLocationsCard />}
 
-            {/* Advanced - Desktop only */}
+            {/* Desktop CLI controls plus cross-platform reset */}
             <Card title="Advanced">
-              {IS_TAURI && (
+              {IS_TAURI && !IS_ANDROID && (
                 <CardItem
                   title={t('settings:general.atomicBotCliTitle')}
                   description={
@@ -661,116 +681,122 @@ function General() {
                   />
                 }
               />
-              <CardItem
-                title="Preload last used model on startup"
-                description="Start the local inference server with your last model when the app opens."
-                actions={
-                  <Switch
-                    checked={preloadModelOnStartup}
-                    onCheckedChange={setPreloadModelOnStartup}
-                  />
-                }
-              />
-              <CardItem
-                title="Reasoning budget (local models)"
-                description="Limits thinking tokens for llama.cpp / MLX. Off disables reasoning entirely."
-                actions={
-                  <select
-                    className="border-input bg-background rounded-md border px-2 py-1 text-sm"
-                    value={reasoningBudget}
-                    onChange={(e) =>
-                      setReasoningBudget(
-                        e.target.value as typeof reasoningBudget
-                      )
+              {!IS_ANDROID && (
+                <>
+                  <CardItem
+                    title="Preload last used model on startup"
+                    description="Start the local inference server with your last model when the app opens."
+                    actions={
+                      <Switch
+                        checked={preloadModelOnStartup}
+                        onCheckedChange={setPreloadModelOnStartup}
+                      />
                     }
-                  >
-                    <option value="off">Off</option>
-                    <option value="low">Low (256)</option>
-                    <option value="medium">Medium (1024)</option>
-                    <option value="high">High (4096)</option>
-                    <option value="unlimited">Unlimited</option>
-                  </select>
-                }
-              />
-              <CardItem
-                title={t('settings:general.huggingfaceToken', {
-                  ns: 'settings',
-                })}
-                description={t('settings:general.huggingfaceTokenDesc', {
-                  ns: 'settings',
-                })}
-                actions={
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="hf-token"
-                      value={huggingfaceToken || ''}
-                      onChange={(e) => setHuggingfaceToken(e.target.value)}
-                      placeholder={'hf_xxx_xxx'}
-                      required
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={isValidatingToken}
-                      onClick={async () => {
-                        const token = (huggingfaceToken || '').trim()
-                        if (!token) {
-                          toast.error(
-                            'Please enter a Hugging Face token to validate'
+                  />
+                  <CardItem
+                    title="Reasoning budget (local models)"
+                    description="Limits thinking tokens for llama.cpp / MLX. Off disables reasoning entirely."
+                    actions={
+                      <select
+                        className="border-input bg-background rounded-md border px-2 py-1 text-sm"
+                        value={reasoningBudget}
+                        onChange={(e) =>
+                          setReasoningBudget(
+                            e.target.value as typeof reasoningBudget
                           )
-                          return
                         }
-                        setIsValidatingToken(true)
-                        const controller = new AbortController()
-                        const timeoutId = setTimeout(
-                          () => controller.abort(),
-                          TOKEN_VALIDATION_TIMEOUT_MS
-                        )
-                        try {
-                          const resp = await fetch(
-                            'https://huggingface.co/api/whoami-v2',
-                            {
-                              headers: { Authorization: `Bearer ${token}` },
-                              signal: controller.signal,
+                      >
+                        <option value="off">Off</option>
+                        <option value="low">Low (256)</option>
+                        <option value="medium">Medium (1024)</option>
+                        <option value="high">High (4096)</option>
+                        <option value="unlimited">Unlimited</option>
+                      </select>
+                    }
+                  />
+                </>
+              )}
+              {!IS_ANDROID && (
+                <CardItem
+                  title={t('settings:general.huggingfaceToken', {
+                    ns: 'settings',
+                  })}
+                  description={t('settings:general.huggingfaceTokenDesc', {
+                    ns: 'settings',
+                  })}
+                  actions={
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="hf-token"
+                        value={huggingfaceToken || ''}
+                        onChange={(e) => setHuggingfaceToken(e.target.value)}
+                        placeholder={'hf_xxx_xxx'}
+                        required
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={isValidatingToken}
+                        onClick={async () => {
+                          const token = (huggingfaceToken || '').trim()
+                          if (!token) {
+                            toast.error(
+                              'Please enter a Hugging Face token to validate'
+                            )
+                            return
+                          }
+                          setIsValidatingToken(true)
+                          const controller = new AbortController()
+                          const timeoutId = setTimeout(
+                            () => controller.abort(),
+                            TOKEN_VALIDATION_TIMEOUT_MS
+                          )
+                          try {
+                            const resp = await fetch(
+                              'https://huggingface.co/api/whoami-v2',
+                              {
+                                headers: { Authorization: `Bearer ${token}` },
+                                signal: controller.signal,
+                              }
+                            )
+                            if (resp.ok) {
+                              const data = await resp.json()
+                              toast.success('Token is valid', {
+                                description: data?.name
+                                  ? `Signed in as ${data.name}`
+                                  : 'Your Hugging Face token is valid.',
+                              })
+                            } else {
+                              toast.error('Token invalid', {
+                                description:
+                                  'The provided Hugging Face token is invalid. Please check your token and try again.',
+                              })
                             }
-                          )
-                          if (resp.ok) {
-                            const data = await resp.json()
-                            toast.success('Token is valid', {
-                              description: data?.name
-                                ? `Signed in as ${data.name}`
-                                : 'Your Hugging Face token is valid.',
-                            })
-                          } else {
-                            toast.error('Token invalid', {
-                              description:
-                                'The provided Hugging Face token is invalid. Please check your token and try again.',
-                            })
+                          } catch (e) {
+                            const name = (e as { name?: string })?.name
+                            if (name === 'AbortError') {
+                              toast.error('Validation timed out', {
+                                description:
+                                  'The validation request timed out. Please check your network connection and try again.',
+                              })
+                            } else {
+                              toast.error('Validation failed', {
+                                description:
+                                  'A network error occurred while validating the token. Please check your internet connection.',
+                              })
+                            }
+                          } finally {
+                            clearTimeout(timeoutId)
+                            setIsValidatingToken(false)
                           }
-                        } catch (e) {
-                          const name = (e as { name?: string })?.name
-                          if (name === 'AbortError') {
-                            toast.error('Validation timed out', {
-                              description:
-                                'The validation request timed out. Please check your network connection and try again.',
-                            })
-                          } else {
-                            toast.error('Validation failed', {
-                              description:
-                                'A network error occurred while validating the token. Please check your internet connection.',
-                            })
-                          }
-                        } finally {
-                          clearTimeout(timeoutId)
-                          setIsValidatingToken(false)
-                        }
-                      }}
-                    >
-                      Verify
-                    </Button>
-                  </div>
-                }
-              />
+                        }}
+                      >
+                        Verify
+                      </Button>
+                    </div>
+                  }
+                />
+              )}
             </Card>
 
             {/* Resources — закомментировано */}

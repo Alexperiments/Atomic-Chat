@@ -1996,10 +1996,10 @@ function ProviderDetail() {
       </HeaderPage>
       <div className="flex h-[calc(100%-60px)]">
         <SettingsMenu />
-        <div className="p-4 pt-0 w-full overflow-y-auto">
+        <div className="min-w-0 flex-1 overflow-y-auto p-4 pt-0">
           <div className="flex flex-col justify-between gap-4 gap-y-3 w-full">
-            <div className="flex items-center justify-between">
-              <h1 className="font-medium text-base">
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <h1 className="min-w-0 break-words font-medium text-base">
                 {getProviderTitle(providerName)}
               </h1>
               <Switch
@@ -2447,7 +2447,7 @@ function ProviderDetail() {
                       description={
                         <>
                           <RenderMarkdown
-                            className="![>p]:text-muted-foreground select-none"
+                            className="min-w-0 break-words ![>p]:text-muted-foreground [&_a]:break-all select-none"
                             content={setting.description}
                             components={{
                               // Make links open in a new tab, with the
@@ -2688,11 +2688,11 @@ function ProviderDetail() {
               {/* Models */}
               <Card
                 header={
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="mb-4 flex flex-col items-stretch gap-3 md:flex-row md:items-center md:justify-between">
                     <h1 className="text-foreground font-medium text-base">
                       {t('providers:models')}
                     </h1>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       {provider &&
                         provider.provider !== 'llamacpp' &&
                         provider.provider !== 'llamacpp-upstream' &&
@@ -2798,9 +2798,9 @@ function ProviderDetail() {
                         <CardItem
                           key={modelIndex}
                           title={
-                            <div className="flex items-center gap-2">
+                            <div className="flex min-w-0 items-center gap-2">
                               <h1
-                                className="font-medium line-clamp-1 max-w-[16rem] lg:max-w-[24rem] xl:max-w-none"
+                                className="min-w-0 truncate font-medium md:max-w-[16rem] lg:max-w-[24rem] xl:max-w-none"
                                 title={model.id}
                               >
                                 {getModelDisplayName(model)}

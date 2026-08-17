@@ -33,19 +33,19 @@ export function CardItem({
     <>
       <div
         className={cn(
-          'flex justify-between mt-2 first:mt-0 border-b border-border/40 pb-3 last:border-none last:pb-0 gap-8',
+          'flex flex-col items-stretch justify-between mt-2 first:mt-0 border-b border-border/40 pb-3 last:border-none last:pb-0 gap-3 md:flex-row md:gap-8',
           descriptionOutside && 'border-0',
-          align === 'start' && 'items-start',
-          align === 'center' && 'items-center',
-          align === 'end' && 'items-end',
+          align === 'start' && 'md:items-start',
+          align === 'center' && 'md:items-center',
+          align === 'end' && 'md:items-end',
           column && 'flex-col gap-y-0 items-start',
           className
         )}
       >
-        <div className="space-y-1.5">
-          <h1 className="font-medium text-foreground">{title}</h1>
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <h1 className="break-words font-medium text-foreground">{title}</h1>
           {description && (
-            <span className="text-muted-foreground leading-normal">
+            <span className="block min-w-0 break-words text-muted-foreground leading-normal [&_a]:break-all">
               {description}
             </span>
           )}
@@ -53,7 +53,7 @@ export function CardItem({
         {actions && (
           <div
             className={cn(
-              'shrink-0',
+              'max-w-full min-w-0 shrink-0',
               classNameWrapperAction,
               column && 'w-full'
             )}
@@ -63,7 +63,7 @@ export function CardItem({
         )}
       </div>
       {descriptionOutside && (
-        <span className="text-muted-foreground leading-normal">
+        <span className="block min-w-0 break-words text-muted-foreground leading-normal [&_a]:break-all">
           {descriptionOutside}
         </span>
       )}

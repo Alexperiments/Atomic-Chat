@@ -9,7 +9,7 @@ decision is reversed, add a new one that says which record it supersedes.
 2. Add one line to the right section of this index.
 3. Do **not** paste the record body into `AGENTS.md`.
 
-198 records, 2026-05-19 → 2026-08-14.
+199 records, 2026-05-19 → 2026-08-17.
 
 ---
 
@@ -218,8 +218,9 @@ decision is reversed, add a new one that says which record it supersedes.
 - **2026-06-10** — [Throttle crashloop `model_load` failure spam client-side; confirm `model_load.status` / api 404-noise are already-fixed-pending-rollout, not code bugs (ATO-130: ATO-133 + ATO-131 + ATO-132)](2026-06-10-throttle-crashloop-model-load-failure-spam-client-side-confirm.md)
 - **2026-06-09** — [Add zero-PII Sentry crash/error tracking to both the React frontend and the Rust/Tauri desktop, gated behind `productAnalytic` (ATO-113)](2026-06-09-add-zero-pii-sentry-crash-error-tracking-to-both-the-react.md)
 
-## Packaging, installers, autostart & platform policy (12)
+## Packaging, installers, autostart & platform policy (13)
 
+- **2026-08-17** — [Use desktop thread files in Android shared storage](2026-08-17-use-desktop-thread-files-on-android.md)
 - **2026-08-05** — [Default autostart on only for clean desktop installs](2026-08-05-default-autostart-on-only-for-clean-desktop-installs.md)
 - **2026-08-05** — [Keep launch at startup opt-in and ignore development binaries](2026-08-05-keep-launch-at-startup-opt-in-and-ignore-development-binaries.md)
 - **2026-08-03** — [Disable WebKit DMABUF rendering on Linux](2026-08-03-disable-webkit-dmabuf-rendering-on-linux.md)
@@ -266,4 +267,3 @@ decision is reversed, add a new one that says which record it supersedes.
 - **2026-07-28** — [Isolate the unstable Tauri IPC test API](2026-07-28-isolate-tauri-ipc-test-api.md)
 - **2026-07-23** — [Isolate the Windows Common Controls test manifest by feature](2026-07-23-isolate-the-windows-common-controls-test-manifest-by-feature.md)
 - **2026-07-20** — [Open Agent-referenced files from assistant summaries](2026-07-20-open-agent-referenced-files-from-assistant-summaries.md)
-

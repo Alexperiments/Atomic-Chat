@@ -662,7 +662,28 @@ pub fn allowed_methods_for_path(path: &str) -> Option<&'static [&'static str]> {
     }
 }
 
-use tauri_plugin_mlx::state::{MlxBackendSession, SessionInfo};
+#[cfg(feature = "mlx")]
+pub use tauri_plugin_mlx::state::{MlxBackendSession, SessionInfo};
+
+// The local API proxy also carries remote-provider traffic on mobile, where
+// the macOS-only MLX plugin is intentionally absent. An empty map of these
+// compatible placeholder types keeps that shared proxy available without
+// pulling MLX into the Android binary.
+#[cfg(not(feature = "mlx"))]
+#[derive(Debug, Clone)]
+pub struct SessionInfo {
+    pub pid: i32,
+    pub port: i32,
+    pub model_id: String,
+    pub model_path: String,
+    pub is_embedding: bool,
+    pub api_key: String,
+}
+
+#[cfg(not(feature = "mlx"))]
+pub struct MlxBackendSession {
+    pub info: SessionInfo,
+}
 
 fn is_local_url(url: &str) -> bool {
     url.contains("://localhost")

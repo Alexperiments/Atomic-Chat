@@ -136,6 +136,7 @@ import {
   useBackendMismatch,
 } from '@/hooks/useBackendMismatch'
 import type { AgentSkill } from '@/services/agent/skills'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 type ChatInputProps = {
   className?: string
@@ -162,6 +163,7 @@ const ChatInput = memo(function ChatInput({
   onStop,
   chatStatus,
 }: ChatInputProps) {
+  const isMobile = useIsMobile()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const agentSkillTokenRef = useRef<HTMLSpanElement>(null)
   const [agentSkillTokenWidth, setAgentSkillTokenWidth] = useState(0)
@@ -645,6 +647,10 @@ const ChatInput = memo(function ChatInput({
       return
     }
 
+    if (isMobile) {
+      textareaRef.current?.blur()
+    }
+
     setMessage('')
 
     // A previous model load found that the running backend is not the one the UI
@@ -917,10 +923,10 @@ const ChatInput = memo(function ChatInput({
 
   // Focus when component mounts
   useEffect(() => {
-    if (textareaRef.current) {
+    if (!isMobile && textareaRef.current) {
       textareaRef.current.focus()
     }
-  }, [])
+  }, [isMobile])
 
   useEffect(() => {
     if (tooltipToolsAvailable && dropdownToolsAvailable) {
@@ -930,20 +936,20 @@ const ChatInput = memo(function ChatInput({
 
   // Focus when thread changes
   useEffect(() => {
-    if (textareaRef.current) {
+    if (!isMobile && textareaRef.current) {
       textareaRef.current.focus()
     }
-  }, [currentThreadId])
+  }, [currentThreadId, isMobile])
 
   // Focus when streaming content finishes
   useEffect(() => {
-    if (chatStatus !== 'submitted' && textareaRef.current) {
+    if (!isMobile && chatStatus !== 'submitted' && textareaRef.current) {
       // Small delay to ensure UI has updated
       setTimeout(() => {
         textareaRef.current?.focus()
       }, 10)
     }
-  }, [chatStatus])
+  }, [chatStatus, isMobile])
 
   const stopStreaming = useCallback(
     (threadId: string) => {
@@ -2525,7 +2531,7 @@ const ChatInput = memo(function ChatInput({
                         ? t('chat:agentMode.placeholder')
                         : t('common:placeholder.chatInput')
                   }
-                  autoFocus
+                  autoFocus={!isMobile}
                   spellCheck={spellCheckChatInput}
                   data-gramm={spellCheckChatInput}
                   data-gramm_editor={spellCheckChatInput}

@@ -16,6 +16,7 @@ import { resetForcedOnboardingRun } from './lib/onboarding'
 import { useGeneralSetting } from './hooks/useGeneralSetting'
 import { useModelProvider } from './hooks/useModelProvider'
 import GlobalError from './containers/GlobalError'
+import { installMobileViewportFix } from './lib/mobileViewport'
 
 // ATO-113: arm Sentry before anything else so the React ErrorBoundary and the
 // global window.onerror / unhandledrejection handlers catch the earliest
@@ -40,7 +41,19 @@ const setupMobileViewport = () => {
     // Add mobile-specific styles for status bar
     const style = document.createElement('style')
     style.textContent = `
+      html {
+        height: var(--app-viewport-height, 100dvh);
+        overflow: hidden;
+      }
+
       body {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: var(--app-viewport-height, 100dvh);
+        box-sizing: border-box;
+        overflow: hidden;
         padding-top: env(safe-area-inset-top);
         padding-bottom: env(safe-area-inset-bottom);
         padding-left: env(safe-area-inset-left);
@@ -48,7 +61,19 @@ const setupMobileViewport = () => {
       }
 
       #root {
-        min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        height: calc(var(--app-viewport-height, 100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      /* Route shells inherited desktop viewport units. Keep them inside the
+         resized WebView instead of letting Android pan the whole document. */
+      .h-svh {
+        height: calc(var(--app-viewport-height, 100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+      }
+
+      .min-h-svh {
+        min-height: 0 !important;
       }
 
       /* Prevent zoom on input focus */
@@ -57,6 +82,7 @@ const setupMobileViewport = () => {
       }
     `
     document.head.appendChild(style)
+    installMobileViewportFix()
   }
 }
 

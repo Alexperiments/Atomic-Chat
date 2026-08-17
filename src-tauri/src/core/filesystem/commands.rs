@@ -2,9 +2,12 @@
 // It's added to ensure the legacy implementation from frontend still functions before removal.
 use super::helpers::resolve_path;
 use super::models::{DialogOpenOptions, FileStat};
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 use rfd::AsyncFileDialog;
 use std::fs;
 use tauri::Runtime;
+#[cfg(any(target_os = "android", target_os = "ios"))]
+use tauri_plugin_dialog::DialogExt;
 
 #[tauri::command]
 pub fn rm<R: Runtime>(app_handle: tauri::AppHandle<R>, args: Vec<String>) -> Result<(), String> {
@@ -425,6 +428,7 @@ pub fn normalize_backend_layout<R: Runtime>(
 }
 
 // rfd native file dialog
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 #[tauri::command]
 pub async fn open_dialog(
     options: Option<DialogOpenOptions>,
@@ -471,6 +475,7 @@ pub async fn open_dialog(
     Ok(result.map(|file| serde_json::Value::String(file.path().to_string_lossy().to_string())))
 }
 
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 #[tauri::command]
 pub async fn save_dialog(options: Option<DialogOpenOptions>) -> Result<Option<String>, String> {
     let mut dialog = AsyncFileDialog::new();
@@ -503,4 +508,74 @@ pub async fn save_dialog(options: Option<DialogOpenOptions>) -> Result<Option<St
 
     let result = dialog.save_file().await;
     Ok(result.map(|file| file.path().to_string_lossy().to_string()))
+}
+
+// Android and iOS cannot compile rfd. Keep the legacy command contract by
+// delegating to Tauri's native mobile dialog plugin instead.
+#[cfg(any(target_os = "android", target_os = "ios"))]
+#[tauri::command]
+pub async fn open_dialog<R: Runtime>(
+    app_handle: tauri::AppHandle<R>,
+    options: Option<DialogOpenOptions>,
+) -> Result<Option<serde_json::Value>, String> {
+    let mut dialog = app_handle.dialog().file();
+    let mut multiple = false;
+
+    if let Some(opts) = options {
+        if opts.directory == Some(true) {
+            return Err("Directory selection is not supported on mobile".to_string());
+        }
+
+        multiple = opts.multiple == Some(true);
+        if let Some(path) = opts.default_path {
+            dialog = dialog.set_directory(path);
+        }
+        if let Some(filters) = opts.filters {
+            for filter in filters {
+                let extensions: Vec<&str> = filter.extensions.iter().map(String::as_str).collect();
+                dialog = dialog.add_filter(filter.name, &extensions);
+            }
+        }
+    }
+
+    if multiple {
+        Ok(dialog.blocking_pick_files().map(|files| {
+            serde_json::Value::Array(
+                files
+                    .into_iter()
+                    .map(|file| serde_json::Value::String(file.to_string()))
+                    .collect(),
+            )
+        }))
+    } else {
+        Ok(dialog
+            .blocking_pick_file()
+            .map(|file| serde_json::Value::String(file.to_string())))
+    }
+}
+
+#[cfg(any(target_os = "android", target_os = "ios"))]
+#[tauri::command]
+pub async fn save_dialog<R: Runtime>(
+    app_handle: tauri::AppHandle<R>,
+    options: Option<DialogOpenOptions>,
+) -> Result<Option<String>, String> {
+    let mut dialog = app_handle.dialog().file();
+
+    if let Some(opts) = options {
+        if let Some(path) = opts.default_path {
+            let path = std::path::Path::new(&path);
+            if let Some(name) = path.file_name() {
+                dialog = dialog.set_file_name(name.to_string_lossy().into_owned());
+            }
+        }
+        if let Some(filters) = opts.filters {
+            for filter in filters {
+                let extensions: Vec<&str> = filter.extensions.iter().map(String::as_str).collect();
+                dialog = dialog.add_filter(filter.name, &extensions);
+            }
+        }
+    }
+
+    Ok(dialog.blocking_save_file().map(|file| file.to_string()))
 }

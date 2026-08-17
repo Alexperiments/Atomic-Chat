@@ -1,7 +1,13 @@
 use tauri::{AppHandle, Manager, Runtime, State};
 use tauri_plugin_llamacpp::state::LlamacppState;
 use tauri_plugin_llamacpp_upstream::state::LlamacppState as LlamacppUpstreamState;
+#[cfg(feature = "mlx")]
 use tauri_plugin_mlx::state::MlxState;
+
+#[cfg(not(feature = "mlx"))]
+use std::{collections::HashMap, sync::Arc};
+#[cfg(not(feature = "mlx"))]
+use tokio::sync::Mutex;
 
 use crate::core::server::proxy;
 use crate::core::state::AppState;
@@ -37,8 +43,13 @@ pub async fn start_server<R: Runtime>(
     let llama_upstream_state: State<LlamacppUpstreamState> = app_handle.state();
     let sessions_upstream = llama_upstream_state.llama_server_process.clone();
 
-    let mlx_state: State<MlxState> = app_handle.state();
-    let mlx_sessions = mlx_state.mlx_server_process.clone();
+    #[cfg(feature = "mlx")]
+    let mlx_sessions = {
+        let mlx_state: State<MlxState> = app_handle.state();
+        mlx_state.mlx_server_process.clone()
+    };
+    #[cfg(not(feature = "mlx"))]
+    let mlx_sessions = Arc::new(Mutex::new(HashMap::<i32, proxy::MlxBackendSession>::new()));
 
     let actual_port = proxy::start_server(
         app_handle.clone(),

@@ -15,15 +15,12 @@ const PLUGINS_ROOT = join(TAURI_ROOT, 'plugins')
 
 const EXPECTED_DESKTOP_ONLY = new Set([
   'check_for_app_updates',
-  'get_local_http',
   'is_update_available',
-  'post_local_http',
   'set_telemetry_consent',
   'set_telemetry_context',
   'set_telemetry_user',
-  'stream_local_http',
 ])
-const EXPECTED_MOBILE_ONLY = new Set(['abort_remote_stream'])
+const EXPECTED_MOBILE_ONLY = new Set(['select_android_data_folder'])
 const EXPECTED_PLUGIN_IDS = [
   'foundation-models',
   'hardware',

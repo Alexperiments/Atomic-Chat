@@ -28,6 +28,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar'
 
 export function LeftSidebar() {
@@ -40,6 +41,7 @@ export function LeftSidebar() {
   const selectedProvider = useModelProvider((state) => state.selectedProvider)
   const isAgentProviderSelected = isLlamacppProvider(selectedProvider)
   const settingsIconRef = useRef<SettingsIconHandle>(null)
+  const { isMobile, setOpenMobile } = useSidebar()
   const [showAgentAttention, setShowAgentAttention] = useState(
     () =>
       localStorage.getItem(localStorageKey.agentModeAttentionSeen) !== 'true'
@@ -210,7 +212,10 @@ export function LeftSidebar() {
                 onMouseEnter={() => settingsIconRef.current?.startAnimation()}
                 onMouseLeave={() => settingsIconRef.current?.stopAnimation()}
               >
-                <Link to={route.settings.general}>
+                <Link
+                  to={isMobile ? route.settings.index : route.settings.general}
+                  onClick={() => isMobile && setOpenMobile(false)}
+                >
                   <SettingsIcon
                     ref={settingsIconRef}
                     className="text-foreground/70"
