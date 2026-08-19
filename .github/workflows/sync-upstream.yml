@@ -106,7 +106,8 @@ jobs:
             "- Fork base: ${fork_head}" \
             "- Fork-owned files under .github/workflows are intentionally preserved." \
             "" \
-            "Review the upstream changes and validation results before marking this ready and merging it.")
+            "Review the upstream changes and validation results before marking this ready." \
+            "Merge with Create a merge commit; squash or rebase would discard upstream ancestry and cause duplicate sync proposals.")
 
           gh pr create \
             --repo "${GITHUB_REPOSITORY}" \
