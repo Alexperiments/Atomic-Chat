@@ -1,4 +1,4 @@
-name: Sync fork with upstream
+name: Propose upstream sync
 
 on:
   schedule:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: sync-upstream-main
@@ -17,16 +17,20 @@ jobs:
     if: github.repository == 'Alexperiments/Atomic-Chat'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
 
     steps:
       - name: Check out fork main
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
           fetch-depth: 0
 
-      - name: Merge upstream main
+      - name: Open a draft upstream sync pull request
         env:
+          GH_TOKEN: ${{ github.token }}
           UPSTREAM_REPOSITORY: AtomicBot-ai/Atomic-Chat
           UPSTREAM_BRANCH: main
         run: |
@@ -40,7 +44,74 @@ jobs:
             exit 0
           fi
 
+          existing_pr_url=$(gh pr list \
+            --repo "${GITHUB_REPOSITORY}" \
+            --base main \
+            --state open \
+            --limit 100 \
+            --json headRefName,url \
+            --jq '[.[] | select(.headRefName | startswith("automation/upstream-sync-"))][0].url // empty')
+
+          if [[ -n "${existing_pr_url}" ]]; then
+            echo "An upstream sync pull request is already open: ${existing_pr_url}"
+            echo "Merge or close it before creating a newer sync proposal."
+            exit 0
+          fi
+
+          fork_head=$(git rev-parse HEAD)
+          upstream_sha=$(git rev-parse "upstream/${UPSTREAM_BRANCH}")
+          short_sha=${upstream_sha:0:12}
+          sync_branch="automation/upstream-sync-${short_sha}"
+
+          previous_pr_url=$(gh pr list \
+            --repo "${GITHUB_REPOSITORY}" \
+            --head "${sync_branch}" \
+            --state all \
+            --limit 1 \
+            --json url \
+            --jq '.[0].url // empty')
+
+          if [[ -n "${previous_pr_url}" ]]; then
+            echo "A pull request already exists for ${upstream_sha}: ${previous_pr_url}"
+            exit 0
+          fi
+
+          if git ls-remote --exit-code --heads origin "${sync_branch}" >/dev/null 2>&1; then
+            echo "::error::Remote branch ${sync_branch} exists without a pull request."
+            echo "Remove that stale automation branch, then rerun this workflow."
+            exit 1
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git merge --no-edit "upstream/${UPSTREAM_BRANCH}"
-          git push origin HEAD:main
+          git switch --create "${sync_branch}"
+          git merge --no-commit --no-ff "upstream/${UPSTREAM_BRANCH}"
+
+          # Upstream workflows are untrusted automation until reviewed separately.
+          # Keep the fork's reviewed workflows while syncing application changes.
+          git restore \
+            --source="${fork_head}" \
+            --staged \
+            --worktree \
+            -- .github/workflows
+
+          git diff --check
+          git commit -m "chore: sync upstream ${UPSTREAM_BRANCH} at ${short_sha}"
+          git push --set-upstream origin "${sync_branch}"
+
+          pr_body=$(printf '%s\n' \
+            "Automated draft proposal to sync this fork with ${UPSTREAM_REPOSITORY}:${UPSTREAM_BRANCH}." \
+            "" \
+            "- Upstream commit: ${upstream_sha}" \
+            "- Fork base: ${fork_head}" \
+            "- Fork-owned files under .github/workflows are intentionally preserved." \
+            "" \
+            "Review the upstream changes and validation results before marking this ready and merging it.")
+
+          gh pr create \
+            --repo "${GITHUB_REPOSITORY}" \
+            --base main \
+            --head "${sync_branch}" \
+            --draft \
+            --title "chore: sync upstream ${UPSTREAM_BRANCH} (${short_sha})" \
+            --body "${pr_body}"
